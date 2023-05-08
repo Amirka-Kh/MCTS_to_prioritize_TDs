@@ -15,6 +15,32 @@ from monte_carlo_tree_search import MCTS, Node
 
 _TTTB = namedtuple("Prioritizer", "tup state terminal")
 
+td = {
+    'addressed': False,
+    'spend': 0,
+    'defined': 0,
+    'lines_changed': 0,
+    'debt_maintain': 0,
+    'id': 0,
+}
+TD = namedtuple('TD', td)
+
+beginning_state = {
+    'lines_of_code': 224, 'lines': 266,
+    'statements': 85, 'functions': 12,
+    'classes': 4, 'files': 8,
+    'comments': 2,
+    'cyclomatic': 19, 'cognitive': 11,
+    'issues': 4,
+    'dupl_lines': 0, 'dupl_blocks': 0,
+    'debt_maintain': 6, 'rate_maintain': 5,
+    'vulnerabilites': 0, 'rate_sec': 5,
+    'rem_eff_sec': 0, 'bugs': 1,
+    'rate_reliable': 3, 'rem_eff_rel': 2,
+    'new_lines': 0,
+}
+State = namedtuple('State', beginning_state)
+
 
 # Inheriting from a namedtuple is convenient because it makes the class
 # immutable and predefines __init__, __repr__, __hash__, __eq__, and others
@@ -24,13 +50,13 @@ class Prioritizer(_TTTB, Node):
             return set()
         # Otherwise, you can refactor not addressed TD
         return {
-            board.make_move(i) for i, value in enumerate(board.tup) if value['addressed'] is None
+            board.make_move(i) for i, value in enumerate(board.tup) if value.addressed is False
         }
 
     def find_random_child(board):
         if board.terminal:
             return None  # If the prioritization is finished then no refactorings can be made
-        empty_spots = [i for i, value in enumerate(board.tup) if value['addressed'] is False]
+        empty_spots = [i for i, value in enumerate(board.tup) if value.addressed is False]
         return board.make_move(choice(empty_spots))
 
     def reward(board):
@@ -47,31 +73,65 @@ class Prioritizer(_TTTB, Node):
 
     def make_move(board, index):
         tup = board.tup
-        tup[index]['addressed'] = True
+        tds = []
+        for i in range(len(tup)):
+            if i == index:
+                old_td = tup[index]
+                new_td = TD(True, old_td.spend,
+                            old_td.defined, old_td.lines_changed,
+                            old_td.debt_maintain, old_td.id,
+                            )
+                tds.append(new_td)
+                continue
+            tds.append(tup[i])
+        # tup[index].addressed = True
+        new_tup = tuple(tds)
         new_state = board.change_board_state(index)
-        is_terminal = not any(v['addressed'] is False for v in tup)
-        return Prioritizer(tup, new_state, is_terminal)
+        is_terminal = not any(v.addressed is False for v in tup)
+        return Prioritizer(new_tup, new_state, is_terminal)
 
     def change_board_state(board, index):
         td = board.tup[index]
         state = board.state
 
-        state['lines_of_code'] += td['lines_changed']
-        state['lines'] += td['lines_changed']
-        state['new_lines'] += abs(td['lines_changed'])
-        state['debt_maintain'] -= td['debt_maintain']
-
+        # lines_of_code = state['lines_of_code'] + td['lines_changed']
+        # lines = state['lines'] + td['lines_changed']
+        # new_lines = state['new_lines'] + abs(td['lines_changed'])
+        # debt_m = state['debt_maintain'] - td['debt_maintain']
+        # bugs = state['bugs']
+        # rate_reliable = state['rate_reliable']
+        # rem_eff_rel = state['rem_eff_rel']
+        lines_of_code = state.lines_of_code + td.lines_changed
+        lines = state.lines + td.lines_changed
+        new_lines = state.new_lines + abs(td.lines_changed)
+        debt_m = state.debt_maintain - td.debt_maintain
+        bugs = state.bugs
+        rate_reliable = state.rate_reliable
+        rem_eff_rel = state.rem_eff_rel
         if index == 3:
-            state['bugs'] = 0
-            state['rate_reliable'] = 5
-            state['rem_eff_rel'] = 0
-        return state
+            bugs = 0
+            rate_reliable = 5
+            rem_eff_rel = 0
+        return State(
+                    lines_of_code=lines_of_code, lines=lines,
+                    statements=85, functions=12,
+                    classes=4, files=8,
+                    comments=2,
+                    cyclomatic=19, cognitive=11,
+                    issues=4,
+                    dupl_lines=0, dupl_blocks=0,
+                    debt_maintain=debt_m, rate_maintain=5,
+                    vulnerabilites=0, rate_sec=5,
+                    rem_eff_sec=0, bugs=bugs,
+                    rate_reliable=rate_reliable, rem_eff_rel=rem_eff_rel,
+                    new_lines=new_lines,
+                )
 
     def to_pretty_string(board):
-        to_char = lambda v: ("X" if v['addressed'] is True else "O")
+        to_char = lambda v: ("XXX" if v.addressed is True else "O")
         rows = [[to_char(board.tup[col]) for col in range(4)], ]
         return (
-                "\n  1 2 3 4\n"
+                "\n  TD1 TD2 TD3 TD4\n"
                 "\n".join(str(i + 1) + " " + " ".join(row) for i, row in enumerate(rows))
                 + "\n"
         )
@@ -91,50 +151,26 @@ def prioritizatize():
 
 
 def prioritization_board():
-    tech_debts = ({
-                      'addressed': False,
-                      'spend': 1,
-                      'defined': 5,
-                      'lines_changed': 0,
-                      'debt_maintain': 0,
-                      'id': 1,
-                  }, {
-                      'addressed': False,
-                      'spend': 1,
-                      'defined': 1,
-                      'lines_changed': -3,  # actually 9 lines
-                      'debt_maintain': 1,
-                      'id': 2,
-                  }, {
-                      'addressed': False,
-                      'spend': float(1.5),
-                      'defined': 2,
-                      'lines_changed': 1,
-                      'debt_maintain': 0,
-                      'id': 3,
-                  }, {
-                      'addressed': False,
-                      'spend': 2,
-                      'defined': 5,
-                      'lines_changed': 0,
-                      'debt_maintain': 5,
-                      'id': 4,
-                  },
+    tech_debts = (
+        TD(False, 1, 5, 0, 0, 1),
+        TD(False, 1, 1, -3, 1, 2),
+        TD(False, 1.5, 2, 1, 0, 3),
+        TD(False, 2, 5, 0, 5, 4),
     )
-    project_state = {
-        'lines_of_code': 224, 'lines': 266,
-        'statements': 85, 'functions': 12,
-        'classes': 4, 'files': 8,
-        'comments': 2,
-        'cyclomatic': 19, 'cognitive': 11,
-        'issues': 4,
-        'dupl_lines': 0, 'dupl_blocks': 0,
-        'debt_maintain': 6, 'rate_maintain': 5,
-        'vulnerabilites': 0, 'rate_sec': 5,
-        'rem_eff_sec': 0, 'bugs': 1,
-        'rate_reliable': 3, 'rem_eff_rel': 2,
-        'new_lines': 0,
-    }
+    project_state = State(
+        lines_of_code=224, lines=266,
+        statements=85, functions=12,
+        classes=4, files=8,
+        comments=2,
+        cyclomatic=19, cognitive=11,
+        issues=4,
+        dupl_lines=0, dupl_blocks=0,
+        debt_maintain=6, rate_maintain=5,
+        vulnerabilites=0, rate_sec=5,
+        rem_eff_sec=0, bugs=1,
+        rate_reliable=3, rem_eff_rel=2,
+        new_lines=0,
+    )
     return Prioritizer(tup=tech_debts, state=project_state, terminal=False)
 
 
