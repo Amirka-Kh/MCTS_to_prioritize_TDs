@@ -12,34 +12,12 @@ the problem domain as tuples:
 from collections import namedtuple
 from random import choice
 from monte_carlo_tree_search import MCTS, Node
+from constants import TD_TEMPLATE, BEGIN_STATE
 
 _TTTB = namedtuple("Prioritizer", "tup state terminal")
 
-td = {
-    'addressed': False,
-    'spend': 0,
-    'defined': 0,
-    'lines_changed': 0,
-    'debt_maintain': 0,
-    'id': 0,
-}
-TD = namedtuple('TD', td)
-
-beginning_state = {
-    'lines_of_code': 224, 'lines': 266,
-    'statements': 85, 'functions': 12,
-    'classes': 4, 'files': 8,
-    'comments': 2,
-    'cyclomatic': 19, 'cognitive': 11,
-    'issues': 4,
-    'dupl_lines': 0, 'dupl_blocks': 0,
-    'debt_maintain': 6, 'rate_maintain': 5,
-    'vulnerabilites': 0, 'rate_sec': 5,
-    'rem_eff_sec': 0, 'bugs': 1,
-    'rate_reliable': 3, 'rem_eff_rel': 2,
-    'new_lines': 0,
-}
-State = namedtuple('State', beginning_state)
+TD = namedtuple('TD', TD_TEMPLATE)
+State = namedtuple('State', BEGIN_STATE)
 
 
 # Inheriting from a namedtuple is convenient because it makes the class
@@ -113,41 +91,37 @@ class Prioritizer(_TTTB, Node):
             rate_reliable = 5
             rem_eff_rel = 0
         return State(
-                    lines_of_code=lines_of_code, lines=lines,
-                    statements=85, functions=12,
-                    classes=4, files=8,
-                    comments=2,
-                    cyclomatic=19, cognitive=11,
-                    issues=4,
-                    dupl_lines=0, dupl_blocks=0,
-                    debt_maintain=debt_m, rate_maintain=5,
-                    vulnerabilites=0, rate_sec=5,
-                    rem_eff_sec=0, bugs=bugs,
-                    rate_reliable=rate_reliable, rem_eff_rel=rem_eff_rel,
-                    new_lines=new_lines,
-                )
+            lines_of_code=lines_of_code, lines=lines,
+            statements=85, functions=12,
+            classes=4, files=8,
+            comments=2,
+            cyclomatic=19, cognitive=11,
+            issues=4,
+            dupl_lines=0, dupl_blocks=0,
+            debt_maintain=debt_m, rate_maintain=5,
+            vulnerabilites=0, rate_sec=5,
+            rem_eff_sec=0, bugs=bugs,
+            rate_reliable=rate_reliable, rem_eff_rel=rem_eff_rel,
+            new_lines=new_lines,
+        )
 
     def to_pretty_string(board):
-        to_char = lambda v: ("XXX" if v.addressed is True else "O")
-        rows = [[to_char(board.tup[col]) for col in range(4)], ]
-        return (
-                "\n  TD1 TD2 TD3 TD4\n"
-                "\n".join(str(i + 1) + " " + " ".join(row) for i, row in enumerate(rows))
-                + "\n"
-        )
+        to_char = lambda v: ("yes" if v.addressed is True else "___")
+        row = [to_char(board.tup[col]) for col in range(4)]
+        return "TD1 TD2 TD3 TD4\n" + " ".join(row)
 
 
 def prioritizatize():
     tree = MCTS()
     board = prioritization_board()
-    print(board.to_pretty_string())  # Prints TDs
-    while True:
-        for _ in range(50):
-            tree.do_rollout(board)
-        board = tree.choose(board)
-        print(board.to_pretty_string())
-        if board.terminal:
-            break
+    print(board.to_pretty_string())
+    # while True:
+    #     for _ in range(50):
+    #         tree.do_rollout(board)
+    #     board = tree.choose(board)
+    #     print(board.to_pretty_string())
+    #     if board.terminal:
+    #         break
 
 
 def prioritization_board():
@@ -157,21 +131,12 @@ def prioritization_board():
         TD(False, 1.5, 2, 1, 0, 3),
         TD(False, 2, 5, 0, 5, 4),
     )
-    project_state = State(
-        lines_of_code=224, lines=266,
-        statements=85, functions=12,
-        classes=4, files=8,
-        comments=2,
-        cyclomatic=19, cognitive=11,
-        issues=4,
-        dupl_lines=0, dupl_blocks=0,
-        debt_maintain=6, rate_maintain=5,
-        vulnerabilites=0, rate_sec=5,
-        rem_eff_sec=0, bugs=1,
-        rate_reliable=3, rem_eff_rel=2,
-        new_lines=0,
+    initial_state = State(
+        lines_of_code=224, lines=266, statements=85, functions=12, classes=4, files=8, comments=2, cyclomatic=19,
+        cognitive=11, issues=4, dupl_lines=0, dupl_blocks=0, debt_maintain=6, rate_maintain=5, vulnerabilites=0,
+        rate_sec=5, rem_eff_sec=0, bugs=1, rate_reliable=3, rem_eff_rel=2, new_lines=0,
     )
-    return Prioritizer(tup=tech_debts, state=project_state, terminal=False)
+    return Prioritizer(tup=tech_debts, state=initial_state, terminal=False)
 
 
 if __name__ == "__main__":
