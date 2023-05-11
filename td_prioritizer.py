@@ -24,61 +24,52 @@ State = namedtuple('State', BEGIN_STATE)
 # immutable and predefines __init__, __repr__, __hash__, __eq__, and others
 class Prioritizer(_TTTB, Node):
     def find_children(board):
-        if board.terminal:  # If the prioritization is finished then no TD refactorings can be made
+        if board.terminal:  # If no more refactorings left this node\state is terminal
             return set()
-        # Otherwise, you can refactor not addressed TD
+        # Otherwise, you can refactor available TDs
         return {
             board.make_move(i) for i, value in enumerate(board.tup) if value.addressed is False
         }
 
     def find_random_child(board):
-        if board.terminal:
-            return None  # If the prioritization is finished then no refactorings can be made
+        if board.terminal:  # If no more refactorings left this node\state is terminal
+            return None
         empty_spots = [i for i, value in enumerate(board.tup) if value.addressed is False]
         return board.make_move(choice(empty_spots))
 
     def reward(board):
         if not board.terminal:
-            raise RuntimeError(f"reward called on nonterminal board {board}")
+            raise RuntimeError(f"reward called on non-terminal board {board}")
         st = board.state
 
-        reward = st['lines'] / (st['statements'] + st['functions'] + st['classes'] + st['files'] + st['comments'])
-        reward += (4 - st['issues']) / 4 + (st['debt_maintain'] + st['ref_eff_rel']) / 13
+        reward = st.lines / (st.statements + st.functions + st.classes + st.files + st.comments)
+        reward += (4 - st.issues) / 4 + (st.debt_maintain + st.rem_eff_rel) / 13
         return reward
 
     def is_terminal(board):
         return board.terminal  # returns boolean
 
     def make_move(board, index):
-        tup = board.tup
-        tds = []
-        for i in range(len(tup)):
+        tds_list = []
+        for i, value in enumerate(board.tup):
             if i == index:
-                old_td = tup[index]
-                new_td = TD(True, old_td.spend,
-                            old_td.defined, old_td.lines_changed,
-                            old_td.debt_maintain, old_td.id,
-                            )
-                tds.append(new_td)
+                new_td = TD(
+                    True, value.spend, value.defined, value.lines_changed,
+                    value.debt_maintain, value.id,
+                )
+                tds_list.append(new_td)
                 continue
-            tds.append(tup[i])
-        # tup[index].addressed = True
-        new_tup = tuple(tds)
+            tds_list.append(value)
+
+        new_board_tup = tuple(tds_list)
         new_state = board.change_board_state(index)
-        is_terminal = not any(v.addressed is False for v in tup)
-        return Prioritizer(new_tup, new_state, is_terminal)
+        is_terminal = not any(v.addressed is False for v in new_board_tup)
+        return Prioritizer(new_board_tup, new_state, is_terminal)
 
     def change_board_state(board, index):
         td = board.tup[index]
         state = board.state
 
-        # lines_of_code = state['lines_of_code'] + td['lines_changed']
-        # lines = state['lines'] + td['lines_changed']
-        # new_lines = state['new_lines'] + abs(td['lines_changed'])
-        # debt_m = state['debt_maintain'] - td['debt_maintain']
-        # bugs = state['bugs']
-        # rate_reliable = state['rate_reliable']
-        # rem_eff_rel = state['rem_eff_rel']
         lines_of_code = state.lines_of_code + td.lines_changed
         lines = state.lines + td.lines_changed
         new_lines = state.new_lines + abs(td.lines_changed)
@@ -91,18 +82,10 @@ class Prioritizer(_TTTB, Node):
             rate_reliable = 5
             rem_eff_rel = 0
         return State(
-            lines_of_code=lines_of_code, lines=lines,
-            statements=85, functions=12,
-            classes=4, files=8,
-            comments=2,
-            cyclomatic=19, cognitive=11,
-            issues=4,
-            dupl_lines=0, dupl_blocks=0,
-            debt_maintain=debt_m, rate_maintain=5,
-            vulnerabilites=0, rate_sec=5,
-            rem_eff_sec=0, bugs=bugs,
-            rate_reliable=rate_reliable, rem_eff_rel=rem_eff_rel,
-            new_lines=new_lines,
+            lines_of_code, lines, state.statements, state.functions, state.classes, state.files,
+            state.comments, state.cyclomatic, state.cognitive, state.issues, state.dupl_lines,
+            state.dupl_blocks, debt_m, state.rate_maintain, state.vulnerabilites,
+            state.rate_sec, state.rem_eff_sec, bugs, rate_reliable, rem_eff_rel, new_lines,
         )
 
     def to_pretty_string(board):
@@ -115,13 +98,14 @@ def prioritizatize():
     tree = MCTS()
     board = prioritization_board()
     print(board.to_pretty_string())
-    # while True:
-    #     for _ in range(50):
-    #         tree.do_rollout(board)
-    #     board = tree.choose(board)
-    #     print(board.to_pretty_string())
-    #     if board.terminal:
-    #         break
+    while True:
+        # train tree for several iteration to find the best possible moves
+        for _ in range(50):
+            tree.do_rollout(board)
+        board = tree.choose(board)  # refactoring chosen, TD eliminated\addressed
+        print(board.to_pretty_string())
+        if board.terminal:
+            break
 
 
 def prioritization_board():
