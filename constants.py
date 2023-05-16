@@ -4,6 +4,7 @@ TD_TEMPLATE = {
     'defined': 0,
     'lines_changed': 0,
     'debt_maintain': 0,
+    'remediation_time': 0,
     'id': 0,
 }
 

@@ -41,9 +41,11 @@ class Prioritizer(_TTTB, Node):
         if not board.terminal:
             raise RuntimeError(f"reward called on non-terminal board {board}")
         st = board.state
+        tup = board.tup
 
-        reward = st.lines / (st.statements + st.functions + st.classes + st.files + st.comments)
-        reward += (4 - st.issues) / 4 + (st.debt_maintain + st.rem_eff_rel) / 13
+        reward = (st.statements + st.functions + st.classes + st.files + st.comments) / st.lines + \
+                 (len(tup) - st.issues) / len(tup) + \
+                 (st.debt_maintain + st.rem_eff_rel) / sum([int(i.remediation_time) for i in tup])
         return reward
 
     def is_terminal(board):
@@ -55,7 +57,7 @@ class Prioritizer(_TTTB, Node):
             if i == index:
                 new_td = TD(
                     True, value.spend, value.defined, value.lines_changed,
-                    value.debt_maintain, value.id,
+                    value.debt_maintain, value.remediation_time, value.id,
                 )
                 tds_list.append(new_td)
                 continue
@@ -110,10 +112,10 @@ def prioritizatize():
 
 def prioritization_board():
     tech_debts = (
-        TD(False, 1, 5, 0, 0, 1),
-        TD(False, 1, 1, -3, 1, 2),
-        TD(False, 1.5, 2, 1, 0, 3),
-        TD(False, 2, 5, 0, 5, 4),
+        TD(False, 1, 5, 0, 0, 0, 1),
+        TD(False, 1, 1, -3, 1, 1, 2),
+        TD(False, 1.5, 2, 1, 0, 2, 3),
+        TD(False, 2, 5, 0, 5, 5, 4),
     )
     initial_state = State(
         lines_of_code=224, lines=266, statements=85, functions=12, classes=4, files=8, comments=2, cyclomatic=19,
