@@ -37,7 +37,7 @@ class MCTS:
         """Make the tree one layer better. (Train for one iteration.)"""
         path = self._select(node)
         leaf = path[-1]
-        self._expand(leaf)
+        self._expand(leaf)  # defines children for the node
         reward = self._simulate(leaf)
         self._backpropagate(path, reward)
 
@@ -69,6 +69,8 @@ class MCTS:
                 reward = node.reward()
                 return reward
             node = node.find_random_child()
+            # reward = node.reward()
+            # return reward
 
     def _backpropagate(self, path, reward):
         """Send the reward back up to the ancestors of the leaf"""

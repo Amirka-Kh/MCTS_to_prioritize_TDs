@@ -13,6 +13,7 @@ from collections import namedtuple
 from random import choice
 from monte_carlo_tree_search import MCTS, Node
 from constants import TD_TEMPLATE, BEGIN_STATE
+import matplotlib.pyplot as plt
 
 _TTTB = namedtuple("Prioritizer", "tup state terminal")
 
@@ -98,16 +99,34 @@ class Prioritizer(_TTTB, Node):
 
 def prioritizatize():
     tree = MCTS()
-    board = prioritization_board()
-    print(board.to_pretty_string())
-    while True:
-        # train tree for several iteration to find the best possible moves
-        for _ in range(50):
-            tree.do_rollout(board)
-        board = tree.choose(board)  # refactoring chosen, TD eliminated\addressed
-        print(board.to_pretty_string())
-        if board.terminal:
-            break
+    stats = []
+    for sim_num in range(1, 35):
+        positions = []
+        board = prioritization_board()
+        while True:
+            # train tree for several iteration to find the best possible moves
+            for _ in range(sim_num):
+                tree.do_rollout(board)
+            board = tree.choose(board)  # refactoring chosen, TD eliminated\addressed
+            for td in board.tup:
+                if td.id in positions:
+                    continue
+                if td.addressed:
+                    positions.append(int(td.id))
+            if board.terminal:
+                stats.append(positions)
+                break
+    first = [i[0] for i in stats]
+    second = [i[1] for i in stats]
+    third = [i[2] for i in stats]
+    forth = [i[3] for i in stats]
+    plt.title('TD prioritization on rollouts count', fontsize=20, fontname='Times New Roman')
+    plt.ylabel('TD number', color='gray')
+    plt.xlabel('Simulations count', color='gray')
+    plt.grid(True)
+    plt.plot([i for i in range(1, 35)], first, 'b', second, 'g', third, 'r', forth, 'c', linewidth=2.0)
+    plt.legend(['First', 'Second', 'Third', 'Forth'], loc=4)
+    plt.show()
 
 
 def prioritization_board():
