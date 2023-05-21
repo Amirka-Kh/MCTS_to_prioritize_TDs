@@ -39,8 +39,6 @@ class Prioritizer(_TTTB, Node):
         return board.make_move(choice(empty_spots))
 
     def reward(board):
-        if not board.terminal:
-            raise RuntimeError(f"reward called on non-terminal board {board}")
         st = board.state
         tup = board.tup
 
@@ -79,11 +77,9 @@ class Prioritizer(_TTTB, Node):
         debt_m = state.debt_maintain - td.debt_maintain
         bugs = state.bugs
         rate_reliable = state.rate_reliable
-        rem_eff_rel = state.rem_eff_rel
-        if index == 3:
-            bugs = 0
-            rate_reliable = 5
-            rem_eff_rel = 0
+        rem_eff_rel = state.rem_eff_rel - td.remediation_time
+        if rem_eff_rel == 0:
+            rate_reliable, bugs = 5, 0
         return State(
             lines_of_code, lines, state.statements, state.functions, state.classes, state.files,
             state.comments, state.cyclomatic, state.cognitive, state.issues, state.dupl_lines,
@@ -98,11 +94,13 @@ class Prioritizer(_TTTB, Node):
 
 
 def prioritizatize():
-    tree = MCTS()
+    max_sim = 66
     stats = []
-    for sim_num in range(1, 35):
+    for sim_num in range(1, max_sim):
         positions = []
         board = prioritization_board()
+        tree = MCTS()
+        tree._expand(board)
         while True:
             # train tree for several iteration to find the best possible moves
             for _ in range(sim_num):
@@ -124,7 +122,7 @@ def prioritizatize():
     plt.ylabel('TD number', color='gray')
     plt.xlabel('Simulations count', color='gray')
     plt.grid(True)
-    plt.plot([i for i in range(1, 35)], first, 'b', second, 'g', third, 'r', forth, 'c', linewidth=2.0)
+    plt.plot([i for i in range(1, max_sim)], first, 'b', second, 'g', third, 'r', forth, 'c', linewidth=2.0)
     plt.legend(['First', 'Second', 'Third', 'Forth'], loc=4)
     plt.show()
 
@@ -132,9 +130,9 @@ def prioritizatize():
 def prioritization_board():
     tech_debts = (
         TD(False, 1, 5, 0, 0, 0, 1),
-        TD(False, 1, 1, -3, 1, 1, 2),
+        TD(False, 1, 1, -3, 1, 0, 2),
         TD(False, 1.5, 2, 1, 0, 2, 3),
-        TD(False, 2, 5, 0, 5, 5, 4),
+        TD(False, 2, 5, 0, 5, 0, 4),
     )
     initial_state = State(
         lines_of_code=224, lines=266, statements=85, functions=12, classes=4, files=8, comments=2, cyclomatic=19,

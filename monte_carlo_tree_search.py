@@ -68,9 +68,9 @@ class MCTS:
             if node.is_terminal():
                 reward = node.reward()
                 return reward
-            node = node.find_random_child()
-            # reward = node.reward()
-            # return reward
+            nodes = node.find_children()
+            rewards = [child.reward() for child in nodes]
+            return sum(rewards)/len(rewards)
 
     def _backpropagate(self, path, reward):
         """Send the reward back up to the ancestors of the leaf"""
@@ -82,7 +82,7 @@ class MCTS:
         """Select a child of node, balancing exploration & exploitation"""
 
         # All children of node should already be expanded:
-        assert all(n in self.children for n in self.children[node])
+        assert all(n in self.children for n in self.children[node]), "there are nodes which are not expanded"
 
         log_N_vertex = math.log(self.N[node])
 
