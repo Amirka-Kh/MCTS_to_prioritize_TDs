@@ -41,11 +41,18 @@ class Prioritizer(_TTTB, Node):
     def reward(board):
         st = board.state
         tup = board.tup
+        last_tup = [i for i in tup if i.last is True][0]
+        overall_time = sum([i.defined for i in tup])
+
+        cost = last_tup.defined / overall_time + last_tup.lines_changed / st.lines
 
         reward = (st.statements + st.functions + st.classes + st.files + st.comments) / st.lines + \
                  (len(tup) - st.issues) / len(tup) + \
-                 (st.debt_maintain + st.rem_eff_rel) / sum([int(i.remediation_time) for i in tup])
-        return reward
+                 last_tup.debt_maintain / (last_tup.debt_maintain + st.debt_maintain + 0.01) + \
+                 last_tup.remediation_time / (last_tup.remediation_time + st.rem_eff_rel + 0.01)
+        # last_tup.debt_maintain / sum([i.debt_maintain for i in tup]) + \
+        # last_tup.remediation_time / sum([i.remediation_time for i in tup])
+        return reward-0.7*cost
 
     def is_terminal(board):
         return board.terminal  # returns boolean
@@ -56,12 +63,14 @@ class Prioritizer(_TTTB, Node):
             if i == index:
                 new_td = TD(
                     True, value.spend, value.defined, value.lines_changed,
-                    value.debt_maintain, value.remediation_time, value.id,
+                    value.debt_maintain, value.remediation_time, True, value.id,
                 )
                 tds_list.append(new_td)
                 continue
-            tds_list.append(value)
-
+            tds_list.append(TD(
+                value.addressed, value.spend, value.defined, value.lines_changed,
+                value.debt_maintain, value.remediation_time, False, value.id,
+            ))
         new_board_tup = tuple(tds_list)
         new_state = board.change_board_state(index)
         is_terminal = not any(v.addressed is False for v in new_board_tup)
@@ -94,9 +103,9 @@ class Prioritizer(_TTTB, Node):
 
 
 def prioritizatize():
-    max_sim = 66
+    max_sim = 30
     stats = []
-    for sim_num in range(1, max_sim):
+    for sim_num in range(0, max_sim):
         positions = []
         board = prioritization_board()
         tree = MCTS()
@@ -122,17 +131,17 @@ def prioritizatize():
     plt.ylabel('TD number', color='gray')
     plt.xlabel('Simulations count', color='gray')
     plt.grid(True)
-    plt.plot([i for i in range(1, max_sim)], first, 'b', second, 'g', third, 'r', forth, 'c', linewidth=2.0)
+    plt.plot([i for i in range(0, max_sim)], first, 'b', second, 'g', third, 'r', forth, 'c', linewidth=2.0)
     plt.legend(['First', 'Second', 'Third', 'Forth'], loc=4)
     plt.show()
 
 
 def prioritization_board():
     tech_debts = (
-        TD(False, 1, 5, 0, 0, 0, 1),
-        TD(False, 1, 1, -3, 1, 0, 2),
-        TD(False, 1.5, 2, 1, 0, 2, 3),
-        TD(False, 2, 5, 0, 5, 0, 4),
+        TD(False, 1, 5, 0, 0, 0, False, 1),
+        TD(False, 1, 1, -3, 1, 0, False, 2),
+        TD(False, 1.5, 2, 1, 0, 2, False, 3),
+        TD(False, 2, 5, 0, 5, 0, False, 4),
     )
     initial_state = State(
         lines_of_code=224, lines=266, statements=85, functions=12, classes=4, files=8, comments=2, cyclomatic=19,
