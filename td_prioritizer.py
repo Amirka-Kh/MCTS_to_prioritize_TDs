@@ -38,7 +38,7 @@ class Prioritizer(_TTTB, Node):
         empty_spots = [i for i, value in enumerate(board.tup) if value.addressed is False]
         return board.make_move(choice(empty_spots))
 
-    def reward(board):
+    def reward(board, weight):
         st = board.state
         tup = board.tup
         last_tup = [i for i in tup if i.last is True][0]
@@ -52,7 +52,7 @@ class Prioritizer(_TTTB, Node):
                  last_tup.remediation_time / (last_tup.remediation_time + st.rem_eff_rel + 0.01)
         # last_tup.debt_maintain / sum([i.debt_maintain for i in tup]) + \
         # last_tup.remediation_time / sum([i.remediation_time for i in tup])
-        return reward-0.7*cost
+        return reward-weight*cost
 
     def is_terminal(board):
         return board.terminal  # returns boolean
@@ -103,16 +103,16 @@ class Prioritizer(_TTTB, Node):
 
 
 def prioritizatize():
-    max_sim = 30
+    max_cost_weight = 50
     stats = []
-    for sim_num in range(0, max_sim):
+    for sim_num in [i/100 for i in range(0, max_cost_weight, 10)]:
         positions = []
         board = prioritization_board()
-        tree = MCTS()
+        tree = MCTS(cost_weight=sim_num)
         tree._expand(board)
         while True:
             # train tree for several iteration to find the best possible moves
-            for _ in range(sim_num):
+            for _ in range(16):
                 tree.do_rollout(board)
             board = tree.choose(board)  # refactoring chosen, TD eliminated\addressed
             for td in board.tup:
@@ -127,11 +127,11 @@ def prioritizatize():
     second = [i[1] for i in stats]
     third = [i[2] for i in stats]
     forth = [i[3] for i in stats]
-    plt.title('TD prioritization on rollouts count', fontsize=20, fontname='Times New Roman')
+    plt.title('TD prioritization on cost weight value', fontsize=20, fontname='Times New Roman')
     plt.ylabel('TD number', color='gray')
-    plt.xlabel('Simulations count', color='gray')
+    plt.xlabel('Cost weight value', color='gray')
     plt.grid(True)
-    plt.plot([i for i in range(0, max_sim)], first, 'b', second, 'g', third, 'r', forth, 'c', linewidth=2.0)
+    plt.plot([str(i/100) for i in range(0, max_cost_weight, 10)], first, 'b', second, 'g', third, 'r', forth, 'c', linewidth=2.0)
     plt.legend(['First', 'Second', 'Third', 'Forth'], loc=4)
     plt.show()
 

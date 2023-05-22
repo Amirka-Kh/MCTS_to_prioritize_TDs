@@ -12,11 +12,12 @@ import math
 class MCTS:
     """Monte Carlo tree searcher. First rollout the tree then choose a move."""
 
-    def __init__(self, exploration_weight=1):
+    def __init__(self, cost_weight=0, exploration_weight=1):
         self.Q = defaultdict(int)  # total reward of each node
         self.N = defaultdict(int)  # total visit count for each node
         self.children = dict()  # children of each node
         self.exploration_weight = exploration_weight
+        self.cost_weight = cost_weight
 
     def choose(self, node):
         """Choose the best successor of node. (Choose a move in the game)"""
@@ -66,10 +67,10 @@ class MCTS:
         """Returns the reward for a random simulation (to completion) of `node`"""
         while True:
             if node.is_terminal():
-                reward = node.reward()
+                reward = node.reward(self.cost_weight)
                 return reward
             nodes = node.find_children()
-            rewards = [child.reward() for child in nodes]
+            rewards = [child.reward(self.cost_weight) for child in nodes]
             return sum(rewards)/len(rewards)
 
     def _backpropagate(self, path, reward):
@@ -118,7 +119,7 @@ class Node(ABC):
         return True
 
     @abstractmethod
-    def reward(self):
+    def reward(self, weight):
         """Assumes `self` is terminal node. 1=win, 0=loss, .5=tie, etc"""
         return 0
 
