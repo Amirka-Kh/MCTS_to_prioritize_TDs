@@ -38,6 +38,8 @@ This thesis project welcomes contributions and feedback from the community. If y
 
 ## License
 
+I took Monte-Carlo algorithm logic from Luke H. (2018). Monte Carlo tree search (MCTS) minimal implementation in Python 3, with a tic-tac-toe example gameplay [Gist]. Retrieved from https://gist.github.com/qpwo/c538c6f73727e254fdc7fab81024f6e1
+
 This project is licensed under the [MIT License](LICENSE). Feel free to use and modify the codebase for academic or research purposes.
 
 ## Contact Information
