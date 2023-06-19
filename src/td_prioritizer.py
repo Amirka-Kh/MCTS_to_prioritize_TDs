@@ -11,8 +11,9 @@ the problem domain as tuples:
 
 from collections import namedtuple
 from random import choice
-from monte_carlo_tree_search import MCTS, Node
-from constants import TD_TEMPLATE, BEGIN_STATE
+from src.monte_carlo_tree_search import MCTS, Node
+from src.constants import TD_TEMPLATE, BEGIN_STATE
+from data.tests import SMALL, MEDIUM, BIG, STP, MTP, BTP
 import matplotlib.pyplot as plt
 
 _TTTB = namedtuple("Prioritizer", "tup state terminal")
@@ -96,11 +97,6 @@ class Prioritizer(_TTTB, Node):
             state.rate_sec, state.rem_eff_sec, bugs, rate_reliable, rem_eff_rel, new_lines,
         )
 
-    def to_pretty_string(board):
-        to_char = lambda v: ("yes" if v.addressed is True else "___")
-        row = [to_char(board.tup[col]) for col in range(4)]
-        return "TD1 TD2 TD3 TD4\n" + " ".join(row)
-
 
 def prioritizatize():
     max_sim = 30
@@ -127,27 +123,39 @@ def prioritizatize():
     second = [i[1] for i in stats]
     third = [i[2] for i in stats]
     forth = [i[3] for i in stats]
+    fifth = [i[4] for i in stats]
     plt.title('TD prioritization on rollouts count', fontsize=20, fontname='Times New Roman')
     plt.ylabel('TD number', color='gray')
     plt.xlabel('Simulations count', color='gray')
     plt.grid(True)
-    plt.plot([i for i in range(0, max_sim)], first, 'b', second, 'g', third, 'r', forth, 'c', linewidth=2.0)
-    plt.legend(['First', 'Second', 'Third', 'Forth'], loc=4)
+    plt.plot([i for i in range(0, max_sim)], first, 'b', second, 'g', third, 'r', forth, 'c', fifth, 'y', linewidth=2.0)
+    plt.legend(['First', 'Second', 'Third', 'Forth', 'Fifth'], loc=4)
     plt.show()
 
 
 def prioritization_board():
-    tech_debts = (
-        TD(False, 1, 5, 0, 0, 0, False, 1),
-        TD(False, 1, 1, -3, 1, 0, False, 2),
-        TD(False, 1.5, 2, 1, 0, 2, False, 3),
-        TD(False, 2, 5, 0, 5, 0, False, 4),
-    )
-    initial_state = State(
-        lines_of_code=224, lines=266, statements=85, functions=12, classes=4, files=8, comments=2, cyclomatic=19,
-        cognitive=11, issues=4, dupl_lines=0, dupl_blocks=0, debt_maintain=6, rate_maintain=5, vulnerabilites=0,
-        rate_sec=5, rem_eff_sec=0, bugs=1, rate_reliable=3, rem_eff_rel=2, new_lines=0,
-    )
+    tech_debts, initial_state = None, None
+
+    size = 'small'
+    if size == 'small':
+        tmp = []
+        for i in SMALL:
+            tmp.append(TD._make(i))
+        tech_debts = tuple(tmp)
+        initial_state = State._make(STP)
+    elif size == 'medium':
+        tmp = []
+        for i in MEDIUM:
+            tmp.append(TD._make(i))
+        tech_debts = tuple(tmp)
+        initial_state = State._make(MTP)
+    else:
+        tmp = []
+        for i in BIG:
+            tmp.append(TD._make(i))
+        tech_debts = tuple(tmp)
+        initial_state = State._make(BTP)
+
     return Prioritizer(tup=tech_debts, state=initial_state, terminal=False)
 
 
