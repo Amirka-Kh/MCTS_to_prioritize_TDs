@@ -14,6 +14,14 @@ The project consists of the following components:
 
 3. ...
 
+## Repository Structure
+
+The repository is organized as follows:
+
+* `src/`: Contains the source code of the Monte-Carlo algorithm implementation, technical debt element simulation, and payoff value computation.
+* `data/`: Includes sample data files or datasets used for simulations and testing.
+* `docs/`: Contains documentation related to the project, including thesis write-up, research findings, and supporting materials.
+
 ## Getting Started
 
 To run and experiment with the project, follow these steps:
@@ -36,8 +44,9 @@ This project is licensed under the [MIT License](LICENSE). Feel free to use and 
 
 For further inquiries or discussions related to this thesis project, please contact:
 
-[Amir Khuzin]
-[a.khuzin@innopolis.university]
-[Innopolis University]
+Amir Khuzin
+
+a.khuzin@innopolis.university
+
 
 Thank you for your interest in this thesis project. Your support and engagement are highly appreciated!
