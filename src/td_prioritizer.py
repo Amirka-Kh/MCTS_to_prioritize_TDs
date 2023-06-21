@@ -101,9 +101,10 @@ class Prioritizer(_TTTB, Node):
 def prioritizatize():
     max_sim = 30
     stats = []
+    test_project_size = 'default'
     for sim_num in range(0, max_sim):
         positions = []
-        board = prioritization_board()
+        board = prioritization_board(test_project_size)
         tree = MCTS()
         tree._expand(board)
         while True:
@@ -119,25 +120,25 @@ def prioritizatize():
             if board.terminal:
                 stats.append(positions)
                 break
-    first = [i[0] for i in stats]
-    second = [i[1] for i in stats]
-    third = [i[2] for i in stats]
-    forth = [i[3] for i in stats]
-    # fifth = [i[4] for i in stats]
-    plt.title('TD prioritization on rollouts count', fontsize=20, fontname='Times New Roman')
-    plt.ylabel('TD number', color='gray')
-    plt.xlabel('Simulations count', color='gray')
-    plt.grid(True)
-    # plt.plot([i for i in range(0, max_sim)], first, 'b', second, 'g', third, 'r', forth, 'c', fifth, 'y', linewidth=2.0)
-    plt.plot([i for i in range(0, max_sim)], first, 'b', second, 'g', third, 'r', forth, 'c', linewidth=2.0)
-    plt.legend(['First', 'Second', 'Third', 'Forth', 'Fifth'], loc=4)
-    plt.show()
+    if test_project_size == 'default':
+        first = [i[0] for i in stats]
+        second = [i[1] for i in stats]
+        third = [i[2] for i in stats]
+        forth = [i[3] for i in stats]
+        # fifth = [i[4] for i in stats]
+        plt.title('TD prioritization on rollouts count', fontsize=20, fontname='Times New Roman')
+        plt.ylabel('TD number', color='gray')
+        plt.xlabel('Simulations count', color='gray')
+        plt.grid(True)
+        # plt.plot([i for i in range(0, max_sim)], first, 'b', second, 'g', third, 'r', forth, 'c', fifth, 'y', linewidth=2.0)
+        plt.plot([i for i in range(0, max_sim)], first, 'b', second, 'g', third, 'r', forth, 'c', linewidth=2.0)
+        plt.legend(['First', 'Second', 'Third', 'Forth', 'Fifth'], loc=4)
+        plt.show()
 
 
-def prioritization_board():
+def prioritization_board(size):
     tech_debts, initial_state = None, None
 
-    size = 'default'
     if size == 'small':
         tmp = []
         for i in SMALL:
