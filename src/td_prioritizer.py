@@ -43,9 +43,9 @@ class Prioritizer(_TTTB, Node):
         st = board.state
         tup = board.tup
         last_tup = [i for i in tup if i.last is True][0]
-        overall_time = sum([i.defined for i in tup])
+        overall_time = sum([i.spend for i in tup])
 
-        cost = last_tup.defined / overall_time + last_tup.lines_changed / st.lines
+        cost = last_tup.spend / overall_time + last_tup.lines_changed / st.lines
 
         reward = (st.statements + st.functions + st.classes + st.files + st.comments) / st.lines + \
                  (len(tup) - st.issues) / len(tup) + \
@@ -123,12 +123,13 @@ def prioritizatize():
     second = [i[1] for i in stats]
     third = [i[2] for i in stats]
     forth = [i[3] for i in stats]
-    fifth = [i[4] for i in stats]
+    # fifth = [i[4] for i in stats]
     plt.title('TD prioritization on rollouts count', fontsize=20, fontname='Times New Roman')
     plt.ylabel('TD number', color='gray')
     plt.xlabel('Simulations count', color='gray')
     plt.grid(True)
-    plt.plot([i for i in range(0, max_sim)], first, 'b', second, 'g', third, 'r', forth, 'c', fifth, 'y', linewidth=2.0)
+    # plt.plot([i for i in range(0, max_sim)], first, 'b', second, 'g', third, 'r', forth, 'c', fifth, 'y', linewidth=2.0)
+    plt.plot([i for i in range(0, max_sim)], first, 'b', second, 'g', third, 'r', forth, 'c', linewidth=2.0)
     plt.legend(['First', 'Second', 'Third', 'Forth', 'Fifth'], loc=4)
     plt.show()
 
@@ -136,7 +137,7 @@ def prioritizatize():
 def prioritization_board():
     tech_debts, initial_state = None, None
 
-    size = 'small'
+    size = 'default'
     if size == 'small':
         tmp = []
         for i in SMALL:
@@ -149,12 +150,24 @@ def prioritization_board():
             tmp.append(TD._make(i))
         tech_debts = tuple(tmp)
         initial_state = State._make(MTP)
-    else:
+    elif size == 'big':
         tmp = []
         for i in BIG:
             tmp.append(TD._make(i))
         tech_debts = tuple(tmp)
         initial_state = State._make(BTP)
+    else:
+        tech_debts = (
+            TD(False, 1, 5, 0, 0, 0, False, 1),
+            TD(False, 1, 1, -3, 1, 0, False, 2),
+            TD(False, 1.5, 2, 1, 0, 2, False, 3),
+            TD(False, 2, 5, 0, 5, 0, False, 4),
+        )
+        initial_state = State(
+            lines_of_code=224, lines=266, statements=85, functions=12, classes=4, files=8, comments=2, cyclomatic=19,
+            cognitive=11, issues=4, dupl_lines=0, dupl_blocks=0, debt_maintain=6, rate_maintain=5, vulnerabilites=0,
+            rate_sec=5, rem_eff_sec=0, bugs=1, rate_reliable=3, rem_eff_rel=2, new_lines=0,
+        )
 
     return Prioritizer(tup=tech_debts, state=initial_state, terminal=False)
 
